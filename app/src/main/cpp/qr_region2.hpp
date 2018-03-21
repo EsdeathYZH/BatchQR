@@ -22,7 +22,7 @@ using namespace cv::ximgproc::segmentation;
 
 inline float calc_similarity(cv::Rect bbox, int size)
 {
-    float weight = bbox.height>=bbox.width ? (float)bbox.width/(float)bbox.height : (float)bbox.height/(float)bbox.width;
+    float weight = bbox.height>=bbox.width ? (float)bbox.width/bbox.height : (float)bbox.height/bbox.width;
     return weight * size / bbox.area();
 }
 
@@ -30,12 +30,12 @@ inline float calc_similarity(cv::Rect bbox1, cv::Rect bbox2, int size1, int size
 {
     cv::Rect bbox = bbox1|bbox2;
     int size = size1+size2;
-    float weight = bbox.height>=bbox.width ? (float)bbox.width/(float)bbox.height : (float)bbox.height/(float)bbox.width;
+    float weight = bbox.height>=bbox.width ? (float)bbox.width/bbox.height : (float)bbox.height/bbox.width;
     return weight * size / bbox.area();
 }
 
 
-int process(cv::Mat& img, std::vector<cv::Rect>& qr_bbox, int& qr_cnt, std::vector<std::string> paths)
+int process(cv::Mat& img, std::vector<cv::Rect>& qr_bbox, std::string paths)
 {
     LOGD("[  INFO]  first write the image before processing.");
     cv::imwrite("/storage/emulated/0/batchQR_model/src.png", img);
@@ -65,12 +65,11 @@ int process(cv::Mat& img, std::vector<cv::Rect>& qr_bbox, int& qr_cnt, std::vect
 
 #ifdef DEBUG_SESSION
     cv::imwrite("/storage/emulated/0/batchQR_model/seg.png", seg);
-    // cv::imwrite("/storage/emulated/0/batchQR_model/src.png", src);
 #endif
     
     LOGD("[  INFO]  reading the svm classifier...");
-    LOGD("[  INFO]  the svm classifier path: %s", paths[0].c_str());
-    cv::Ptr<cv::ml::SVM> svm = cv::ml::SVM::load(paths[0]);
+    LOGD("[  INFO]  the svm classifier path: %s", paths.c_str());
+    cv::Ptr<cv::ml::SVM> svm = cv::ml::SVM::load(paths);
     if(svm.empty())
     {
         LOGE("[ Error]  failed to read the svm classifier.");
@@ -89,16 +88,13 @@ int process(cv::Mat& img, std::vector<cv::Rect>& qr_bbox, int& qr_cnt, std::vect
     cv::Mat is_neighbor = cv::Mat::zeros(nb_segs, nb_segs, CV_8UC1);
 
     const int* previous_p = NULL;
-    for(int i=0; i<seg.rows; ++i)
-    {
+    for(int i=0; i<seg.rows; ++i) {
         const int* p = seg.ptr<int>(i);
-        for(int j=0; j<seg.cols; ++j)
-        {
+        for(int j=0; j<seg.cols; ++j) {
             points[p[j]].push_back(cv::Point(j,i));
             sizes[p[j]]++;
 
-            if(i>0 && j>0)
-            {
+            if(i>0 && j>0) {
                 is_neighbor.at<char>(p[j],          p[j-1]) = 1;
                 is_neighbor.at<char>(p[j], previous_p[j  ]) = 1;
                 is_neighbor.at<char>(p[j], previous_p[j-1]) = 1;
@@ -135,7 +131,6 @@ int process(cv::Mat& img, std::vector<cv::Rect>& qr_bbox, int& qr_cnt, std::vect
     for(int s=0; s<nb_segs; ++s) is_qrseg.push_back(0);
 
     qr_bbox.clear();
-    qr_cnt = 0;
     LOGD("[  INFO]  begin...");
     while(neighbors.size())
     {
@@ -183,8 +178,7 @@ int process(cv::Mat& img, std::vector<cv::Rect>& qr_bbox, int& qr_cnt, std::vect
             is_qrseg[s1] = 1;
             is_qrseg[s2] = 1;
             qr_bbox.push_back(proc_bbox);
-            ++qr_cnt;
-            LOGD("[  INFO] predict results: %d, find one QRC.", qr_flag);
+            LOGD("[  INFO]  predict results: %d, find one QRC.", qr_flag);
         }
     }
 

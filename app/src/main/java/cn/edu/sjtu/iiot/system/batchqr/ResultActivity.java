@@ -81,7 +81,8 @@ public class ResultActivity extends Activity implements View.OnClickListener{
             button.setOnClickListener(this);
             button.setId(i);
             button.setBackgroundResource(R.color.transparent);
-            button.setText("success");
+            button.setText("S");
+            button.setTextColor(Color.GREEN);
             button.setBackgroundColor(Color.TRANSPARENT);
             RelativeLayout.LayoutParams params =new RelativeLayout.LayoutParams
                             (RelativeLayout.LayoutParams.WRAP_CONTENT,

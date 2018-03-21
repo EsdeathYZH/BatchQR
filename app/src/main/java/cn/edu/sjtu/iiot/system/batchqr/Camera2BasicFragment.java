@@ -256,23 +256,18 @@ public class Camera2BasicFragment extends Fragment
 
             @Override
             public void onImageAvailable(ImageReader reader) {
-                // mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
-                // mBackgroundHandler.post(new QrCodeDetector(reader.acquireNextImage()));
 
                 Image mImage;
-                String mImageSavePath;
-                Surface mSurface;
-
                 try {
                     mImage = reader.acquireLatestImage();
                     if (null == mImage) return;
 
                     int imgFormat = reader.getImageFormat();
-                    Log.d(TAG, "\n\n\n\n\nimage format: "+ imgFormat);
+                    Log.d(TAG, "image format: "+ imgFormat);
                     // Actual Image Processing goes here.
                     String[] mPath = {mSvmClassifier.getAbsolutePath(), Environment.getExternalStorageDirectory().getAbsolutePath()};
                     QrCodeDetector.detectQrCodes(mImage, mPath);
-                    // QrCodeDetector.detectQrCodes(mImage, mSurface, mPath);
+                    mImage.close();
                     Log.d(TAG, "detection done.");
 
                     Intent intent = new Intent(getActivity(),ResultActivity.class);
@@ -281,7 +276,6 @@ public class Camera2BasicFragment extends Fragment
                     Log.e(TAG, "too many images queued for saving, dropping image for request: ");
                     return;
                 }
-                mImage.close();
             }
         };
     }
@@ -535,8 +529,8 @@ public class Camera2BasicFragment extends Fragment
             new ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
         } else {
             List<String> permissionsNeeded = new ArrayList<String>();
-            permissionsNeeded.add(Manifest.permission.CAMERA);
             permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
+            permissionsNeeded.add(Manifest.permission.CAMERA);
 
 
             // requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
@@ -544,19 +538,11 @@ public class Camera2BasicFragment extends Fragment
         }
     }
 
-//    private void requestFileIOPermission() {
-//        if (shouldShowRequestPermissionRationale(Manifest.permission.WRITE_EXTERNAL_STORAGE)) {
-//            new ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
-//        } else {
-//            requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, 1);
-//        }
-//    }
-
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults.length != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.length != 2 || grantResults[1] != PackageManager.PERMISSION_GRANTED) {
                 ErrorDialog.newInstance(getString(R.string.request_permission))
                         .show(getChildFragmentManager(), FRAGMENT_DIALOG);
             }

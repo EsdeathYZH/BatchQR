@@ -81,26 +81,6 @@ public class QrCodeDetector {
         return mat;
     }
 
-
-
-    public static void detectQrCodes(Image img, Surface dst, String[] paths) {
-        if (img.getFormat() != ImageFormat.YUV_420_888) {
-            throw new IllegalArgumentException("src must have format YUV_420_888.");
-        }
-        Image.Plane[] planes = img.getPlanes();
-        // Spec guarantees that planes[0] is luma and has pixel stride of 1.
-        // It also guarantees that planes[1] and planes[2] have the same row and
-        // pixel stride.
-        if (planes[1].getPixelStride() != 1 && planes[1].getPixelStride() != 2) {
-            throw new IllegalArgumentException(
-                    "src chroma plane must have a pixel stride of 1 or 2: got "
-                            + planes[1].getPixelStride());
-        }
-
-        Mat mYuv = imageToMat(img);
-        JniProcess0(mYuv.getNativeObjAddr(), dst, paths[0]);
-    }
-
     public static void detectQrCodes(Image img, String[] paths) {
         if (img.getFormat() != ImageFormat.YUV_420_888) {
             throw new IllegalArgumentException("src must have format YUV_420_888.");
@@ -116,19 +96,17 @@ public class QrCodeDetector {
         }
 
         Mat mYuv = imageToMat(img);
-        // JniProcess1(mYuv.getNativeObjAddr(), paths[0]);
         src_image = new Mat();
         Imgproc.cvtColor(mYuv, src_image, Imgproc.COLOR_YUV2BGR_I420);
         Core.transpose(src_image, src_image);
         Core.flip(src_image, src_image, 1);
-        bbox_raw_info = paths[0];
-        bbox_raw_info = JniProcess2(src_image.getNativeObjAddr(), src_image.getNativeObjAddr(), bbox_raw_info);
+
+        bbox_raw_info = JniProcess2(src_image.getNativeObjAddr(), paths[0]);
     }
 
     /**
      * The native-cpp method to convert Image into OpenCV's cv::Mat data type
      */
-    public static native void JniProcess0(long mYuvAddr, Surface dst, String additionalPath);
-    public static native void JniProcess1(long mYuvAddr, String additionalPath);
-    public static native String JniProcess2(long mYuvAddr, long mRgbAddr, String additionalPath);
+    public static native void JniProcess1(long mRgbAddr, String addPath);
+    public static native String JniProcess2(long mRgbAddr, String addPath);
 }
