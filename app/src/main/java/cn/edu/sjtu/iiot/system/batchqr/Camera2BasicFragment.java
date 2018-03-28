@@ -1,19 +1,3 @@
-/*
- * Copyright 2017 The Android Open Source Project
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *       http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- */
-
 package cn.edu.sjtu.iiot.system.batchqr;
 
 import android.Manifest;
@@ -43,7 +27,6 @@ import android.hardware.camera2.params.StreamConfigurationMap;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.annotation.NonNull;
@@ -54,6 +37,7 @@ import android.support.v4.content.ContextCompat;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
@@ -67,7 +51,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.sql.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -84,7 +67,6 @@ public class Camera2BasicFragment extends Fragment
      */
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     private static final int REQUEST_CAMERA_PERMISSION = 1;
-    private static final int REQUEST_EXTERNAL_STORAGE = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
 
     static {
@@ -241,7 +223,7 @@ public class Camera2BasicFragment extends Fragment
     private File mFile;
 
     /**
-     * This is the svm classifier xml file
+     * This is the SVM classifier XML file.
      */
     private File mSvmClassifier;
 
@@ -249,36 +231,35 @@ public class Camera2BasicFragment extends Fragment
      * This a callback object for the {@link ImageReader}. "onImageAvailable" will be called when a
      * still image is ready to be saved.
      */
-    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener;
+    private final ImageReader.OnImageAvailableListener mOnImageAvailableListener
+            = new ImageReader.OnImageAvailableListener() {
 
-    {
-        mOnImageAvailableListener = new ImageReader.OnImageAvailableListener() {
+        @Override
+        public void onImageAvailable(ImageReader reader) {
+            // mBackgroundHandler.post(new ImageSaver(reader.acquireNextImage(), mFile));
+            Image mImage;
+            try {
+                mImage = reader.acquireLatestImage();
+                if (null == mImage) return;
 
-            @Override
-            public void onImageAvailable(ImageReader reader) {
+                int imgFormat = reader.getImageFormat();
+                Log.d(TAG, "image format: "+ imgFormat);
+                // Actual Image Processing goes here.
+                String mPath = mSvmClassifier.getAbsolutePath();
+                QrCodeDetector.detectQrCodes(mImage, mPath);
+                mImage.close();
+                unlockFocus();
 
-                Image mImage;
-                try {
-                    mImage = reader.acquireLatestImage();
-                    if (null == mImage) return;
+                Log.d(TAG, "detection done.");
 
-                    int imgFormat = reader.getImageFormat();
-                    Log.d(TAG, "image format: "+ imgFormat);
-                    // Actual Image Processing goes here.
-                    String[] mPath = {mSvmClassifier.getAbsolutePath(), Environment.getExternalStorageDirectory().getAbsolutePath()};
-                    QrCodeDetector.detectQrCodes(mImage, mPath);
-                    mImage.close();
-                    Log.d(TAG, "detection done.");
-
-                    Intent intent = new Intent(getActivity(),ResultActivity.class);
-                    startActivity(intent);
-                } catch (IllegalStateException e) {
-                    Log.e(TAG, "too many images queued for saving, dropping image for request: ");
-                    return;
-                }
+                Intent intent = new Intent(getActivity(),ResultActivity.class);
+                startActivity(intent);
+            } catch (IllegalStateException e) {
+                Log.e(TAG, "too many images queued for saving, dropping image for request: ");
+                return;
             }
-        };
-    }
+        }
+    };
 
     /**
      * {@link CaptureRequest.Builder} for the camera preview
@@ -426,7 +407,7 @@ public class Camera2BasicFragment extends Fragment
             if (option.getWidth() <= maxWidth && option.getHeight() <= maxHeight &&
                     option.getHeight() == option.getWidth() * h / w) {
                 if (option.getWidth() >= textureViewWidth &&
-                        option.getHeight() >= textureViewHeight) {
+                    option.getHeight() >= textureViewHeight) {
                     bigEnough.add(option);
                 } else {
                     notBigEnough.add(option);
@@ -498,7 +479,6 @@ public class Camera2BasicFragment extends Fragment
         } catch (IOException e) {
             e.printStackTrace();
         }
-
     }
 
     @Override
@@ -528,13 +508,7 @@ public class Camera2BasicFragment extends Fragment
         if (shouldShowRequestPermissionRationale(Manifest.permission.CAMERA)) {
             new ConfirmationDialog().show(getChildFragmentManager(), FRAGMENT_DIALOG);
         } else {
-            List<String> permissionsNeeded = new ArrayList<String>();
-            permissionsNeeded.add(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-            permissionsNeeded.add(Manifest.permission.CAMERA);
-
-
-            // requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
-            requestPermissions(permissionsNeeded.toArray(new String[permissionsNeeded.size()]), 1);
+            requestPermissions(new String[]{Manifest.permission.CAMERA}, REQUEST_CAMERA_PERMISSION);
         }
     }
 
@@ -542,7 +516,7 @@ public class Camera2BasicFragment extends Fragment
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions,
                                            @NonNull int[] grantResults) {
         if (requestCode == REQUEST_CAMERA_PERMISSION) {
-            if (grantResults.length != 2 || grantResults[1] != PackageManager.PERMISSION_GRANTED) {
+            if (grantResults.length != 1 || grantResults[0] != PackageManager.PERMISSION_GRANTED) {
                 ErrorDialog.newInstance(getString(R.string.request_permission))
                         .show(getChildFragmentManager(), FRAGMENT_DIALOG);
             }
@@ -674,7 +648,6 @@ public class Camera2BasicFragment extends Fragment
         if (ContextCompat.checkSelfPermission(getActivity(), Manifest.permission.CAMERA)
                 != PackageManager.PERMISSION_GRANTED) {
             requestCameraPermission();
-            // requestFileIOPermission();
             return;
         }
         setUpCameraOutputs(width, height);
@@ -909,7 +882,7 @@ public class Camera2BasicFragment extends Fragment
                                                @NonNull TotalCaptureResult result) {
                     showToast("Saved: " + mFile);
                     Log.d(TAG, mFile.toString());
-                    unlockFocus();
+                    // unlockFocus();
                 }
             };
 

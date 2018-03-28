@@ -1,7 +1,5 @@
 #include <jni.h>
 #include <android/log.h>
-#include <android/bitmap.h>
-#include <android/native_window_jni.h>
 
 #include <string>
 #include <vector>

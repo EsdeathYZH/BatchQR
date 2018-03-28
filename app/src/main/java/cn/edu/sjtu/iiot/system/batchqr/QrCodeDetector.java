@@ -2,6 +2,7 @@ package cn.edu.sjtu.iiot.system.batchqr;
 
 import android.graphics.ImageFormat;
 import android.media.Image;
+import android.util.Log;
 import android.view.Surface;
 
 import org.opencv.core.Core;
@@ -81,27 +82,41 @@ public class QrCodeDetector {
         return mat;
     }
 
-    public static void detectQrCodes(Image img, String[] paths) {
-        if (img.getFormat() != ImageFormat.YUV_420_888) {
-            throw new IllegalArgumentException("src must have format YUV_420_888.");
-        }
-        Image.Plane[] planes = img.getPlanes();
-        // Spec guarantees that planes[0] is luma and has pixel stride of 1.
-        // It also guarantees that planes[1] and planes[2] have the same row and
-        // pixel stride.
-        if (planes[1].getPixelStride() != 1 && planes[1].getPixelStride() != 2) {
-            throw new IllegalArgumentException(
-                    "src chroma plane must have a pixel stride of 1 or 2: got "
-                            + planes[1].getPixelStride());
+    public static void detectQrCodes(Image img, String paths) {
+        switch(img.getFormat()) {
+            case ImageFormat.YUV_420_888: {
+                Image.Plane[] planes = img.getPlanes();
+                // Spec guarantees that planes[0] is luma and has pixel stride of 1.
+                // It also guarantees that planes[1] and planes[2] have the same row and
+                // pixel stride.
+                if (planes[1].getPixelStride() != 1 && planes[1].getPixelStride() != 2) {
+                    throw new IllegalArgumentException(
+                            "src chroma plane must have a pixel stride of 1 or 2: got "
+                                    + planes[1].getPixelStride());
+                }
+
+                Mat mYuv = imageToMat(img);
+                src_image = new Mat();
+                Imgproc.cvtColor(mYuv, src_image, Imgproc.COLOR_YUV2BGR_I420);
+                break;
+            }
+            case ImageFormat.JPEG: {
+
+                break;
+            }
+            default: {
+                throw new IllegalArgumentException("Unsupported src ImageFormat.");
+            }
+
+
         }
 
-        Mat mYuv = imageToMat(img);
-        src_image = new Mat();
-        Imgproc.cvtColor(mYuv, src_image, Imgproc.COLOR_YUV2BGR_I420);
+
         Core.transpose(src_image, src_image);
         Core.flip(src_image, src_image, 1);
 
-        bbox_raw_info = JniProcess2(src_image.getNativeObjAddr(), paths[0]);
+        bbox_raw_info = JniProcess2(src_image.getNativeObjAddr(), paths);
+        Log.d(TAG, bbox_raw_info);
     }
 
     /**

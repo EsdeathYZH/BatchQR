@@ -3,7 +3,7 @@
   <component name="ProjectModuleManager">
     <modules>
       <module fileurl="file://$PROJECT_DIR$/app/app.iml" filepath="$PROJECT_DIR$/app/app.iml" />
-      <module fileurl="file://$PROJECT_DIR$/batchQR-master.iml" filepath="$PROJECT_DIR$/batchQR-master.iml" />
+      <module fileurl="file://$PROJECT_DIR$/batchQR.iml" filepath="$PROJECT_DIR$/batchQR.iml" />
       <module fileurl="file://$PROJECT_DIR$/openCVLibrary340/openCVLibrary340.iml" filepath="$PROJECT_DIR$/openCVLibrary340/openCVLibrary340.iml" />
     </modules>
   </component>
