@@ -115,13 +115,14 @@ public class QrCodeDetector {
         Core.transpose(src_image, src_image);
         Core.flip(src_image, src_image, 1);
 
-        bbox_raw_info = JniProcess2(src_image.getNativeObjAddr(), paths);
+        bbox_raw_info = JniProcess1(src_image.getNativeObjAddr());
+        // bbox_raw_info = JniProcess2(src_image.getNativeObjAddr(), paths);
         Log.d(TAG, bbox_raw_info);
     }
 
     /**
      * The native-cpp method to convert Image into OpenCV's cv::Mat data type
      */
-    public static native void JniProcess1(long mRgbAddr, String addPath);
+    public static native String JniProcess1(long mRgbAddr);
     public static native String JniProcess2(long mRgbAddr, String addPath);
 }

@@ -218,6 +218,8 @@ int graphseg_process(cv::Mat& img, std::vector<cv::Rect>& qr_bbox, std::string p
     cv::Mat src = img.clone(), seg;
     gs->processImage(src, seg);
 
+    cv::imwrite("/storage/emulated/0/batchQR_model/seg.png", seg);
+
     double min, max;
     cv::minMaxLoc(seg, &min, &max);
     int nb_segs = (int)max + 1;

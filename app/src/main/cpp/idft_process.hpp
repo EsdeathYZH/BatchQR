@@ -90,7 +90,7 @@ void seg_idft(cv::Mat src, cv::Mat& dstMap, std::vector<cv::Rect>& dst, int dSiz
 			cv::magnitude(proc[0], proc[1], resp);
 
 			cv::threshold(resp, resp, 1.0, 1, cv::THRESH_BINARY);
-			float dense = cv::sum(resp)[0]/(float)(dSize*dSize) >= 0.35 ? cv::sum(resp)[0]/(float)(dSize*dSize) : 0.0;
+			float dense = cv::sum(resp)[0]/(float)(dSize*dSize) >= 0.30 ? cv::sum(resp)[0]/(float)(dSize*dSize) : 0.0;
 			if(dense) {
 				dst.push_back(pRect);
 				dstMap.at<int>(i,j) = ++idx;

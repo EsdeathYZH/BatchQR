@@ -36,13 +36,11 @@ std::string to_string(T value)
 extern "C" {
 
 JNIEXPORT jstring JNICALL Java_cn_edu_sjtu_iiot_system_batchqr_QrCodeDetector_JniProcess1(
-        JNIEnv *env, jobject instance, jlong srcRgb, jstring addpath)
+        JNIEnv *env, jobject instance, jlong srcRgb)
 {
     cv::Mat mRgb = *((cv::Mat*)srcRgb);
     float resizeRatio = resize_within_pixel(mRgb, mRgb, 1000);
 
-    const char* jnamestr = env->GetStringUTFChars(addpath, NULL);
-    std::string paths(jnamestr);
     std::vector<cv::Rect> qr_bbox;
 
     // Actual Algorithm runs here;
@@ -65,7 +63,6 @@ JNIEXPORT jstring JNICALL Java_cn_edu_sjtu_iiot_system_batchqr_QrCodeDetector_Jn
 
     cv::imwrite("/storage/emulated/0/batchQR_model/box_results.png", mRgb);
 
-    env->ReleaseStringUTFChars(addpath, jnamestr);
     return env->NewStringUTF(qr_bbox_raw_info.c_str());
 }
 
