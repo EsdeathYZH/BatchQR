@@ -1,3 +1,5 @@
+#include <vector>
+
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
 
@@ -8,38 +10,32 @@
 class UFS
 {
 public:
-	UFS(int n){
-		parents.resize(n);
-		for(int i=0; i<n; ++i){
-			parents[i] = -1;
-		}
+	UFS(int N_): N(N_) {
+		std::vector<int>(N,-1).swap(parents);
 	}
 
-	int find(int p){
-		if(parents[p]<0)
-			return p;
-		else
-			return find(parents[p]);
+	int find(int p) const {
+		if(parents[p]<0) return p;
+		else return find(parents[p]);
 	}
-
-	void join(int p1, int p2){
+	void get(std::vector<int>& rs) const {
+		std::vector<int>().swap(rs);
+		for(int i=0; i<N; ++i) if(parents[i]<0) rs.push_back(i);
+	}
+	void join(int p1, int p2) {
 		int r1 = find(p1);
 		int r2 = find(p2);
 		if(r1==r2) return;
-
-		if(parents[r1]>parents[r2]){
-			parents[r1] = r2;
-		}
+		if(parents[r1]>parents[r2]) parents[r1] = r2;
 		else{
-			if(parents[r1]==parents[r2])
-				parents[r1]--;
-			
+			if(parents[r1]==parents[r2]) --parents[r1];
 			parents[r2] = r1;
 		}
 	}
 
 private:
 	std::vector<int> parents;
+	int N;
 };
 
 

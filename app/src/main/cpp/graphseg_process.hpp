@@ -13,9 +13,7 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/ml.hpp>
 #include <opencv2/ximgproc/segmentation.hpp>
-#include "qr_feature.hpp"
 
-#define DEBUG_SESSION
 
 using namespace cv::ximgproc::segmentation;
 
@@ -34,9 +32,172 @@ inline float calc_similarity(cv::Rect bbox1, cv::Rect bbox2, int size1, int size
     return weight * size / bbox.area();
 }
 
+//////////////////////////////////////////////////////////////////////////////
+// Neighbors
+//////////////////////////////////////////////////////////////////////////////
 
-int process(cv::Mat& img, std::vector<cv::Rect>& qr_bbox, std::string paths)
+struct Neighbor
 {
+    int from;
+    int to;
+    float simlarity;
+
+    Neighbor(int p1, int p2, float p3){
+        from = p1; to = p2; simlarity = p3;
+    }
+
+    friend std::ostream& operator<<(std::ostream& os, const Neighbor& n);
+    bool operator <(const Neighbor& n) const {
+        return simlarity < n.simlarity;
+    }
+};
+
+//////////////////////////////////////////////////////////////////////////////
+// Local Binary Pattern
+//////////////////////////////////////////////////////////////////////////////
+
+class LBP
+{
+public:
+    LBP();
+    void calc_hist(cv::Mat src, cv::Mat& hist, int hs, int ws, int dim);
+    void calc_hist_mask(cv::Mat src, cv::Mat& hist, int dim, cv::Mat mask);
+
+private:
+    cv::Mat lbp;
+    uint8_t table[256];
+    int get_hop_count(uint8_t code);
+    void im2ulbp(cv::Mat src);
+
+};
+
+
+LBP::LBP()
+{
+    memset(table, 0, 256);
+
+    uint8_t dim = 0;
+    for (int i = 0; i < 256; i++)
+        if (get_hop_count(i) <= 2)
+            table[i] = ++dim;
+}
+
+
+int LBP::get_hop_count(uint8_t code)
+{
+    int k = 7;
+    int cnt = 0;
+    int a[8] = {0};
+
+    while (code)
+        a[k] = code & 1, code >>= 1, --k;
+
+    for (k=0;k<7;k++)
+        if (a[k]!=a[k + 1]) ++cnt;
+
+    if (a[0]!=a[7]) ++cnt;
+
+    return cnt;
+}
+
+
+void LBP::im2ulbp(cv::Mat src)
+{
+    if(src.depth()!=0)
+    {
+        std::cout << "[ Error]: unsupport Image Type." << std::endl;
+        return;
+    }
+    else if(src.channels()==3)
+        cv::cvtColor(src, src, cv::COLOR_BGR2GRAY);
+
+
+    const int cols = src.cols;
+    const int rows = src.rows;
+
+    cv::copyMakeBorder(src,src,1,1,1,1,cv::BORDER_REPLICATE);
+    
+    lbp = cv::Mat::zeros(rows, cols, CV_8UC1);
+
+    cv::MatIterator_<uint8_t> it = src.begin<uint8_t>();
+    cv::MatIterator_<uint8_t> it_ = lbp.begin<uint8_t>();
+
+    const int a = src.cols;
+    const int b = lbp.cols;
+
+    for(int i=1;i<=rows;i++)
+        for(int j=1;j<=cols;j++)
+        {
+            uint8_t code = 0;
+            uint8_t center = *(it+a*i+j);
+            code |= (*(it+a*(i-1)+(j-1))>=center) << 7;
+            code |= (*(it+a*(i  )+(j-1))>=center) << 6;
+            code |= (*(it+a*(i+1)+(j-1))>=center) << 5;
+            code |= (*(it+a*(i+1)+(j  ))>=center) << 4;
+            code |= (*(it+a*(i+1)+(j+1))>=center) << 3;
+            code |= (*(it+a*(i  )+(j+1))>=center) << 2;
+            code |= (*(it+a*(i-1)+(j+1))>=center) << 1;
+            code |= (*(it+a*(i-1)+(j  ))>=center);
+            
+            *(it_+b*(i-1)+(j-1)) = table[code];
+        }
+}
+
+
+// hs: height of the cell, ws: width of the cell 
+void LBP::calc_hist(cv::Mat src, cv::Mat& hist, int hs, int ws, int dim)
+{
+    if(!src.empty()) im2ulbp(src);
+
+    int maskh = lbp.rows / hs;
+    int maskw = lbp.cols / ws;
+
+    float range[] = {0,59};
+    const float* histRange = {range};
+    const int histSize = dim;
+
+    hist = cv::Mat::zeros(hs*ws, dim, CV_32FC1);
+
+    for(int i=0; i<hs; ++i)
+        for(int j=0; j<ws; ++j)
+        {
+            cv::Mat proc_hist(dim, 1, CV_32FC1);
+            cv::Mat proc_seg = lbp(cv::Rect(j*maskw, i*maskh, maskw, maskh)).clone();
+            cv::calcHist(&proc_seg, 1, 0, cv::Mat(), proc_hist, 1, &histSize, &histRange);
+            cv::normalize(proc_hist, proc_hist, 1.0, 0.0, cv::NORM_L2);
+
+            proc_hist = proc_hist.t();
+            proc_hist.copyTo(hist.row(i*ws+j));
+        }
+
+    hist = hist.reshape(0,1);
+}
+
+
+void LBP::calc_hist_mask(cv::Mat src, cv::Mat& hist, int dim, cv::Mat mask)
+{
+    if(!src.empty()) im2ulbp(src);
+
+    float range[] = {0,59};
+    const float* histRange = {range};
+    const int histSize = dim;
+
+    hist = cv::Mat::zeros(dim, 1, CV_32FC1);
+
+    cv::calcHist(&lbp, 1, 0, mask, hist, 1, &histSize, &histRange);
+    cv::normalize(hist, hist, 1.0, 0.0, cv::NORM_L1);
+
+    hist = hist.t();
+}
+
+
+//////////////////////////////////////////////////////////////////////////////
+// QR Codes process method using GraphSeg and SVM Classifier
+//////////////////////////////////////////////////////////////////////////////
+
+int graphseg_process(cv::Mat& img, std::vector<cv::Rect>& qr_bbox, std::string paths)
+{
+    LOGD("[  INFO]  cols: %d, rows: %d.", img.cols, img.rows);
     LOGD("[  INFO]  first write the image before processing.");
     cv::imwrite("/storage/emulated/0/batchQR_model/src.png", img);
 
@@ -62,13 +223,9 @@ int process(cv::Mat& img, std::vector<cv::Rect>& qr_bbox, std::string paths)
     int nb_segs = (int)max + 1;
 
     LOGD("[  INFO]  total: %d\tsegments.", nb_segs);
-
-#ifdef DEBUG_SESSION
-    cv::imwrite("/storage/emulated/0/batchQR_model/seg.png", seg);
-#endif
-    
     LOGD("[  INFO]  reading the svm classifier...");
     LOGD("[  INFO]  the svm classifier path: %s", paths.c_str());
+
     cv::Ptr<cv::ml::SVM> svm = cv::ml::SVM::load(paths);
     if(svm.empty())
     {
