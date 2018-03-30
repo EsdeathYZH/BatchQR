@@ -20,12 +20,14 @@
         android:layout_below="@id/texture"
         android:background="@color/control_background">
 
-        <Button
+        <ImageButton
             android:id="@+id/picture"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_gravity="center"
-            android:text="@string/picture" />
+            android:src="@drawable/camera"
+            android:scaleType="centerInside"
+            android:background="@drawable/photo_button"/>
 
         <ImageButton
             android:id="@+id/info"

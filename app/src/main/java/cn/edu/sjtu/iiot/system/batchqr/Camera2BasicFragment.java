@@ -814,6 +814,13 @@ public class Camera2BasicFragment extends Fragment
         lockFocus();
     }
 
+    /*
+      public interface for taking picture from keyevent
+    */
+    public void takePictureFromCenter(){
+        takePicture();
+    }
+
     /**
      * Lock the focus as the first step for a still image capture.
      */

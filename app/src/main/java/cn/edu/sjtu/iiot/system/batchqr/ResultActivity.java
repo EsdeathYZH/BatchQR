@@ -2,6 +2,7 @@ package cn.edu.sjtu.iiot.system.batchqr;
 
 import android.app.Activity;
 import android.content.DialogInterface;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Rect;
@@ -13,7 +14,9 @@ import android.util.Size;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -51,11 +54,24 @@ public class ResultActivity extends Activity implements View.OnClickListener{
     private ArrayList<Bitmap>box_imgs;
     private Map<DecodeHintType, Object> hints;
     private int qr_num = 0;
+
+    private int screenWidth;
+    private int screenHeight;
+    private boolean isGlasses;
+
+    private double screenRatio;
     @Override
     protected void onCreate(Bundle savedInstanceState){
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_result);
-        layout = findViewById(R.id.result_layout);
+        layout = (RelativeLayout) findViewById(R.id.result_layout);
+
+        Resources resources = this.getResources();
+        DisplayMetrics dm = resources.getDisplayMetrics();
+        screenWidth = dm.widthPixels;
+        screenHeight = dm.heightPixels;
+        if(screenHeight<screenWidth) isGlasses = true;
+
         luminanceSources = new ArrayList<>();
         boxes = new ArrayList<>();
         box_imgs = new ArrayList<>();
@@ -79,29 +95,51 @@ public class ResultActivity extends Activity implements View.OnClickListener{
         }
         imageFile = Bitmap.createBitmap(src.width(),src.height(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(src,imageFile);
-        backPreview.setImageBitmap(imageFile);
+        //如果是眼镜
+        if(isGlasses){
+            screenRatio = (double)screenHeight/imageFile.getWidth();
+            Bitmap rotateImage = cn.edu.sjtu.iiot.system.batchqr.Utils.
+                    rotateBitmap(imageFile,270);
+            RelativeLayout.LayoutParams params =new RelativeLayout.LayoutParams
+                    (RelativeLayout.LayoutParams.WRAP_CONTENT,
+                            RelativeLayout.LayoutParams.WRAP_CONTENT);
+            params.topMargin = 0;
+            params.leftMargin = 0;
+            params.height = screenHeight;
+            backPreview.setLayoutParams(params);
+            backPreview.setImageBitmap(rotateImage);
+        }
+        else{
+            screenRatio = (double)screenWidth/imageFile.getWidth();
+            backPreview.setImageBitmap(imageFile);
+        }
     }
 
     private void addButton(){
-        DisplayMetrics dm = new DisplayMetrics();
-        getWindowManager().getDefaultDisplay().getMetrics(dm);
-        int width = dm.widthPixels;
-        int height = dm.heightPixels;
         for (int i = 0; i < boxes.size(); i++) {
             Button button = new Button(this);
             button.setOnClickListener(this);
             button.setId(i);
-            button.setBackgroundResource(R.color.transparent);
+            button.setBackgroundResource(rawResults.get(i)==null?
+                    R.drawable.shape_button_fail:R.drawable.shape_button);
             button.setText(rawResults.get(i)==null?"X":"√");
-            button.setTextSize(16);
+            button.setTextSize(24);
             button.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-            button.setTextColor(rawResults.get(i)==null?Color.RED:Color.GREEN);
-            button.setBackgroundColor(Color.TRANSPARENT);
+            button.setTextColor(rawResults.get(i)==null?Color.RED:Color.parseColor("#388e3c"));
             RelativeLayout.LayoutParams params =new RelativeLayout.LayoutParams
                             (RelativeLayout.LayoutParams.WRAP_CONTENT,
                             RelativeLayout.LayoutParams.WRAP_CONTENT);
-            params.leftMargin = boxes.get(i).left-10;
-            params.topMargin = boxes.get(i).top;
+            if(isGlasses){
+                params.width = (int)(boxes.get(i).height()*screenRatio);
+                params.height = (int)(boxes.get(i).width()*screenRatio);
+                params.leftMargin = (int)(boxes.get(i).top*screenRatio);
+                params.topMargin =(int)((imageFile.getWidth()-boxes.get(i).left-boxes.get(i).width())*screenRatio);
+            }else{
+                params.width = (int)(boxes.get(i).width()*screenRatio);
+                params.height = (int)(boxes.get(i).height()*screenRatio);
+                params.leftMargin = (int)(boxes.get(i).left*screenRatio);
+                params.topMargin = (int)(boxes.get(i).top*screenRatio);
+            }
             button.setLayoutParams(params);
             layout.addView(button);
         }
@@ -141,6 +179,7 @@ public class ResultActivity extends Activity implements View.OnClickListener{
                 qr_num++;
             } catch (ReaderException re) {
                 Result result = forwardDecode(i);
+                if(result!=null) qr_num++;
                 rawResults.add(result);
                 re.printStackTrace();
             } finally {

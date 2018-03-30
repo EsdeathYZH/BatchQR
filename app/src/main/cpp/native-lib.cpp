@@ -71,6 +71,7 @@ JNIEXPORT jstring JNICALL Java_cn_edu_sjtu_iiot_system_batchqr_QrCodeDetector_Jn
         JNIEnv *env, jobject instance, jlong srcRgb, jstring addpath)
 {
     cv::Mat mRgb = *((cv::Mat*)srcRgb);
+    cv::imwrite("/storage/emulated/0/batchQR_model/src0.png", mRgb);
     float resizeRatio = resize_within_pixel(mRgb, mRgb, 1000);
 
     const char* jnamestr = env->GetStringUTFChars(addpath, NULL);
