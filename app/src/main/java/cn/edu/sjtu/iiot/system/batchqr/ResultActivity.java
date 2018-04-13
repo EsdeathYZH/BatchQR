@@ -42,7 +42,7 @@ import okhttp3.Request;
 import okhttp3.Response;
 
 /**
- * Created by SHIYONG on 2018/3/20.
+ * Created by Zihang Yao on 2018/3/20.
  */
 
 public class ResultActivity extends Activity implements View.OnClickListener{
@@ -95,8 +95,6 @@ public class ResultActivity extends Activity implements View.OnClickListener{
         this.backPreview = (ImageView) findViewById(R.id.src_image);
         Mat src = QrCodeDetector.src_image;
         Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2RGB);
-        if(src == null){
-        }
         imageFile = Bitmap.createBitmap(src.width(),src.height(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(src,imageFile);
         //如果是眼镜
@@ -152,12 +150,12 @@ public class ResultActivity extends Activity implements View.OnClickListener{
     private void initBoxes(){
         String box_info = QrCodeDetector.bbox_raw_info;
         //Toast.makeText(this,box_info,Toast.LENGTH_SHORT).show();
-        if(box_info.trim()==""){
+        if(box_info.trim().equals("")){
             return;//Can't detect any Qrcodes.
         }
         String[] box_strings = box_info.split(";");
         for(int i=0; i<box_strings.length; i++){
-            if(box_strings[i].trim()==""){
+            if(box_strings[i].trim().equals("")){
                 continue;
             }
             String[] box_params = box_strings[i].split(" ");
@@ -198,7 +196,7 @@ public class ResultActivity extends Activity implements View.OnClickListener{
         int height = bitmap.getHeight();
         Result result = null;
         float angle = 30;
-        while(result==null && angle!=330){
+        while(result == null && angle!=330){
             Bitmap rotate_img = cn.edu.sjtu.iiot.system.batchqr.
                     Utils.rotateBitmap(bitmap,angle);
             int[] pixels = new int[rotate_img.getWidth() * rotate_img.getHeight()];
@@ -291,7 +289,7 @@ public class ResultActivity extends Activity implements View.OnClickListener{
                             @Override
                             public void run() {
                                 new AlertDialog.Builder(ResultActivity.this)
-                                        .setTitle(name==""?result.getText():name)
+                                        .setTitle(name.equals("")?result.getText():name)
                                         .setMessage(detail+"\n\n"+date)
                                         .setPositiveButton("确定", new DialogInterface.OnClickListener() {
                                             @Override

@@ -33,6 +33,7 @@ public class Utils {
         Collections.sort(qr_bbox, new Comparator<Rect>() {
             @Override
             public int compare(Rect o1, Rect o2) {
+                if(o1.y == o2.y) return 0;
                 return o1.y<o2.y?1:-1;
             }
         });
@@ -44,6 +45,7 @@ public class Utils {
         Collections.sort(edges, new Comparator<Neighbor>() {
             @Override
             public int compare(Neighbor o1, Neighbor o2) {
+                if(o1.simlarity == o2.simlarity) return 0;
                 return (o1.simlarity-o2.simlarity)>0?1:-1;
             }
         });
@@ -88,6 +90,7 @@ public class Utils {
             Collections.sort(qr_bbox_sorted.get(i), new Comparator<Rect>() {
                 @Override
                 public int compare(Rect o1, Rect o2) {
+                    if(o1.x == o2.x) return 0;
                     return o1.x<o2.x?1:-1;
                 }
             });
@@ -131,12 +134,12 @@ public class Utils {
             return "create_bitmap_error";
         }
         try {
-            fOut.flush();
+            if(fOut != null) fOut.flush();
         } catch (IOException e) {
             e.printStackTrace();
         }
         try {
-            fOut.close();
+            if(fOut != null) fOut.close();
         } catch (IOException e) {
             e.printStackTrace();
         }
