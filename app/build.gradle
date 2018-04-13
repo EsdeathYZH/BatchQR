@@ -32,7 +32,7 @@ android {
             path "CMakeLists.txt"
         }
     }
-    buildToolsVersion '26.0.2'
+    buildToolsVersion '27.0.3'
 }
 
 dependencies {
@@ -48,4 +48,5 @@ dependencies {
     implementation files('libs/gson-2.3.1.jar')
     implementation files('libs/Sunflower.jar')
     implementation files('libs/BT300.jar')
+    implementation 'com.squareup.okhttp3:okhttp:3.10.0'
 }

@@ -9,17 +9,13 @@ import android.graphics.Rect;
 import android.os.Bundle;
 import android.support.v7.app.AlertDialog;
 import android.util.DisplayMetrics;
-import android.util.Log;
 import android.util.Size;
 import android.view.SurfaceView;
 import android.view.View;
 import android.widget.Button;
-import android.widget.FrameLayout;
 import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import com.google.zxing.BinaryBitmap;
 import com.google.zxing.DecodeHintType;
@@ -30,12 +26,20 @@ import com.google.zxing.ReaderException;
 import com.google.zxing.Result;
 import com.google.zxing.common.HybridBinarizer;
 
+import org.json.JSONObject;
 import org.opencv.android.Utils;
 import org.opencv.core.Mat;
 import org.opencv.imgproc.Imgproc;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Map;
+
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 /**
  * Created by SHIYONG on 2018/3/20.
@@ -232,16 +236,78 @@ public class ResultActivity extends Activity implements View.OnClickListener{
 
     @Override
     public void onClick(View v){
-        Result result = rawResults.get(v.getId());
-        new AlertDialog.Builder(this)
-                .setTitle("QRcode"+v.getId())
-                .setMessage(result==null?"failed!":result.getText())
-                .setPositiveButton("Confirm", new DialogInterface.OnClickListener() {
+        final Result result = rawResults.get(v.getId());
+        if(result == null){
+            new AlertDialog.Builder(this)
+                    .setTitle("扫描失败！")
+                    .setMessage("Decode failed!")
+                    .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+                        }
+                    })
+                    .create().show();
+        }else {
+            OkHttpClient client = NetworkClient.getClient();
+            Request request = new Request.Builder()
+                    .url("http://47.106.75.68:8080/get?id=" + result.getText())
+                    .build();
+            Response response = null;
+            try {
+                client.newCall(request).enqueue(new Callback() {
                     @Override
-                    public void onClick(DialogInterface dialog, int which) {
+                    public void onFailure(Call call, IOException e) {
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                new AlertDialog.Builder(ResultActivity.this)
+                                        .setTitle("网络出错！")
+                                        .setMessage("Request failed!")
+                                        .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                            }
+                                        })
+                                        .create().show();
+                            }
+                        });
                     }
-                })
-                .create().show();
+
+                    @Override
+                    public void onResponse(Call call, final Response response) throws IOException {
+                        String qr_name = "",qr_date = "",qr_detail = "";
+                        if(response!=null && response.isSuccessful()){
+                            try {
+                                JSONObject qrcode = new JSONObject(response.body().string());
+                                qr_name = qrcode.getString("name");
+                                qr_date = qrcode.getString("date");
+                                qr_detail = qrcode.getString("detail");
+                            }catch (Exception e){
+                                e.printStackTrace();
+                            }
+                        }
+                        final String name = qr_name,date = qr_date,detail = qr_detail;
+                        runOnUiThread(new Runnable() {
+                            @Override
+                            public void run() {
+                                new AlertDialog.Builder(ResultActivity.this)
+                                        .setTitle(name==""?result.getText():name)
+                                        .setMessage(detail+"\n\n"+date)
+                                        .setPositiveButton("确定", new DialogInterface.OnClickListener() {
+                                            @Override
+                                            public void onClick(DialogInterface dialog, int which) {
+                                            }
+                                        })
+                                        .create().show();
+                            }
+                        });
+                    }
+                });
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+
+        }
     }
 
 }
