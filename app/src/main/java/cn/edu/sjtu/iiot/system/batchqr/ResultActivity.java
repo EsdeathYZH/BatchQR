@@ -7,6 +7,8 @@ import android.graphics.Bitmap;
 import android.graphics.Color;
 import android.graphics.Rect;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Message;
 import android.support.v7.app.AlertDialog;
 import android.util.DisplayMetrics;
 import android.util.Size;
@@ -33,6 +35,7 @@ import org.opencv.imgproc.Imgproc;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 
 import okhttp3.Call;
@@ -53,11 +56,24 @@ public class ResultActivity extends Activity implements View.OnClickListener{
     private TextView result_info;
     private final MultiFormatReader multiFormatReader = new MultiFormatReader();
     private ArrayList<LuminanceSource> luminanceSources;
-    private ArrayList<Result> rawResults;
+    private HashMap<Integer,Result> rawResults;
     private ArrayList<Rect>boxes;
     private ArrayList<Bitmap>box_imgs;
     private Map<DecodeHintType, Object> hints;
     private int qr_num = 0;
+
+    private Handler mHandler = new Handler(){
+        @Override
+        public void handleMessage(Message msg) {
+            int index = msg.arg1;
+            Result result = null;
+            if(msg.obj!=null){
+                result = (Result) msg.obj;
+                qr_num++;
+            }
+            showResult(index,result);
+        }
+    };
 
     private int screenWidth;
     private int screenHeight;
@@ -79,11 +95,12 @@ public class ResultActivity extends Activity implements View.OnClickListener{
         luminanceSources = new ArrayList<>();
         boxes = new ArrayList<>();
         box_imgs = new ArrayList<>();
-        rawResults = new ArrayList<Result>();
+        rawResults = new HashMap<Integer,Result>();
+
         initBoxes();
         initView();
         initData();
-        addButton();
+        //result_info.setText("检测出"+boxes.size()+"个二维码，扫描出"+qr_num+"个二维码.");
     }
 
     private void initData(){
@@ -97,7 +114,7 @@ public class ResultActivity extends Activity implements View.OnClickListener{
         Imgproc.cvtColor(src, src, Imgproc.COLOR_BGR2RGB);
         imageFile = Bitmap.createBitmap(src.width(),src.height(), Bitmap.Config.ARGB_8888);
         Utils.matToBitmap(src,imageFile);
-        //如果是眼镜
+        //If glasses
         if(isGlasses){
             screenRatio = (double)screenHeight/imageFile.getWidth();
             Bitmap rotateImage = cn.edu.sjtu.iiot.system.batchqr.Utils.
@@ -115,41 +132,44 @@ public class ResultActivity extends Activity implements View.OnClickListener{
             screenRatio = (double)screenWidth/imageFile.getWidth();
             backPreview.setImageBitmap(imageFile);
         }
-    }
-
-    private void addButton(){
-        for (int i = 0; i < boxes.size(); i++) {
+        //Add buttons
+        for(int index = 0;index<boxes.size();index++) {
             Button button = new Button(this);
             button.setOnClickListener(this);
-            button.setId(i);
-            button.setBackgroundResource(rawResults.get(i)==null?
-                    R.drawable.shape_button_fail:R.drawable.shape_button);
-            button.setText(rawResults.get(i)==null?"X":"√");
+            button.setId(index);
+            button.setBackgroundColor(Color.TRANSPARENT);
             button.setTextSize(24);
             button.setTextAlignment(View.TEXT_ALIGNMENT_CENTER);
-            button.setTextColor(rawResults.get(i)==null?Color.RED:Color.parseColor("#388e3c"));
-            RelativeLayout.LayoutParams params =new RelativeLayout.LayoutParams
-                            (RelativeLayout.LayoutParams.WRAP_CONTENT,
+            RelativeLayout.LayoutParams params = new RelativeLayout.LayoutParams
+                    (RelativeLayout.LayoutParams.WRAP_CONTENT,
                             RelativeLayout.LayoutParams.WRAP_CONTENT);
-            if(isGlasses){
-                params.width = (int)(boxes.get(i).height()*screenRatio);
-                params.height = (int)(boxes.get(i).width()*screenRatio);
-                params.leftMargin = (int)(boxes.get(i).top*screenRatio);
-                params.topMargin =(int)((imageFile.getWidth()-boxes.get(i).left-boxes.get(i).width())*screenRatio);
-            }else{
-                params.width = (int)(boxes.get(i).width()*screenRatio);
-                params.height = (int)(boxes.get(i).height()*screenRatio);
-                params.leftMargin = (int)(boxes.get(i).left*screenRatio);
-                params.topMargin = (int)(boxes.get(i).top*screenRatio);
+            if (isGlasses) {
+                params.width = (int) (boxes.get(index).height() * screenRatio);
+                params.height = (int) (boxes.get(index).width() * screenRatio);
+                params.leftMargin = (int) (boxes.get(index).top * screenRatio);
+                params.topMargin = (int) ((imageFile.getWidth() - boxes.get(index).left - boxes.get(index).width()) * screenRatio);
+            } else {
+                params.width = (int) (boxes.get(index).width() * screenRatio);
+                params.height = (int) (boxes.get(index).height() * screenRatio);
+                params.leftMargin = (int) (boxes.get(index).left * screenRatio);
+                params.topMargin = (int) (boxes.get(index).top * screenRatio);
             }
             button.setLayoutParams(params);
             layout.addView(button);
         }
-        result_info.setText("检测出"+boxes.size()+"个二维码，扫描出"+qr_num+"个二维码.");
     }
+
+    private void showResult(int index,Result result){
+        rawResults.put(index,result);
+        Button button = findViewById(index);
+        button.setBackgroundResource(result == null ?
+                R.drawable.shape_button_fail : R.drawable.shape_button);
+        button.setText(result == null ? "X" : "√");
+        button.setTextColor(result == null ? Color.RED : Color.parseColor("#388e3c"));
+    }
+
     private void initBoxes(){
         String box_info = QrCodeDetector.bbox_raw_info;
-        //Toast.makeText(this,box_info,Toast.LENGTH_SHORT).show();
         if(box_info.trim().equals("")){
             return;//Can't detect any Qrcodes.
         }
@@ -166,27 +186,30 @@ public class ResultActivity extends Activity implements View.OnClickListener{
             boxes.add(new Rect(x,y,x+width,y+height));
         }
     }
+
     private void decode() {
-        qr_num = 0;
-        Size size = new Size(imageFile.getWidth(), imageFile.getHeight());
-
-        buildLuminanceSource(size.getWidth(), size.getHeight());
-
         for (int i = 0; i < boxes.size(); i++) {
-            BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(luminanceSources.get(i)));
-            try {
-                Result result = multiFormatReader.decode(bitmap);
-                //Toast.makeText(this, result.getText(), Toast.LENGTH_SHORT).show();
-                rawResults.add(result);
-                qr_num++;
-            } catch (ReaderException re) {
-                Result result = forwardDecode(i);
-                if(result!=null) qr_num++;
-                rawResults.add(result);
-                re.printStackTrace();
-            } finally {
-                multiFormatReader.reset();
-            }
+            final int index =i;
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    BinaryBitmap bitmap = new BinaryBitmap(new HybridBinarizer(luminanceSources.get(index)));
+                    Result result = null;
+                    try {
+                        result = multiFormatReader.decode(bitmap);
+                        //Toast.makeText(this, result.getText(), Toast.LENGTH_SHORT).show();
+                    } catch (ReaderException re) {
+                        result = forwardDecode(index);
+                        re.printStackTrace();
+                    } finally {
+                        multiFormatReader.reset();
+                    }
+                    Message msg = new Message();
+                    msg.arg1 = index;
+                    msg.obj = result;
+                    mHandler.sendMessage(msg);
+                }
+            }).start();
         }
     }
 
@@ -196,7 +219,7 @@ public class ResultActivity extends Activity implements View.OnClickListener{
         int height = bitmap.getHeight();
         Result result = null;
         float angle = 30;
-        while(result == null && angle!=330){
+        while(result == null && angle!=360){
             Bitmap rotate_img = cn.edu.sjtu.iiot.system.batchqr.
                     Utils.rotateBitmap(bitmap,angle);
             int[] pixels = new int[rotate_img.getWidth() * rotate_img.getHeight()];
