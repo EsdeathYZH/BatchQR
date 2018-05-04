@@ -96,6 +96,7 @@ public class ResultActivity extends Activity implements View.OnClickListener{
         boxes = new ArrayList<>();
         box_imgs = new ArrayList<>();
         rawResults = new HashMap<Integer,Result>();
+        multiFormatReader.setHints(hints);
 
         initBoxes();
         initView();
