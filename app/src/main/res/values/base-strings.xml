@@ -5,8 +5,7 @@
         <![CDATA[
 
 
-            This sample demonstrates the basic use of Camera2 API. Check the source code to see how
-            you can display camera preview and take pictures.
+            This application detect Qrcodes in your eyesight. CLick the camera button and you will see the content of these codes.
 
 
         ]]>

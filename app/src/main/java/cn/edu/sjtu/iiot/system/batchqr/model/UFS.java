@@ -1,4 +1,4 @@
-package cn.edu.sjtu.iiot.system.batchqr;
+package cn.edu.sjtu.iiot.system.batchqr.model;
 
 import java.util.ArrayList;
 

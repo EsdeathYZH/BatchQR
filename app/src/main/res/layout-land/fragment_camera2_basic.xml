@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <cn.edu.sjtu.iiot.system.batchqr.AutoFitTextureView
+    <cn.edu.sjtu.iiot.system.batchqr.view.AutoFitTextureView
         android:id="@+id/texture"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

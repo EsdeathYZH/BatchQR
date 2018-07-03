@@ -3,7 +3,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent">
 
-    <cn.edu.sjtu.iiot.system.batchqr.AutoFitTextureView
+    <cn.edu.sjtu.iiot.system.batchqr.view.AutoFitTextureView
         android:id="@+id/texture"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -35,9 +35,20 @@
             style="@android:style/Widget.Material.Light.Button.Borderless"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_gravity="center_vertical|right"
+            android:layout_gravity="center_vertical|end"
             android:padding="20dp"
             android:src="@drawable/ic_action_info" />
+
+        <android.support.v7.widget.SwitchCompat
+            android:id="@+id/detect_switch"
+            android:showText="true"
+            android:switchPadding="3dp"
+            android:textOn="@string/quick_mode"
+            android:textOff="@string/accurate_mode"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical|start"
+            android:padding="10dp" />
 
     </FrameLayout>
 

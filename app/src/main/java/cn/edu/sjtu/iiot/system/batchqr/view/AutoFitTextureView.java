@@ -14,7 +14,7 @@
  * limitations under the License.
  */
 
-package cn.edu.sjtu.iiot.system.batchqr;
+package cn.edu.sjtu.iiot.system.batchqr.view;
 
 import android.content.Context;
 import android.util.AttributeSet;

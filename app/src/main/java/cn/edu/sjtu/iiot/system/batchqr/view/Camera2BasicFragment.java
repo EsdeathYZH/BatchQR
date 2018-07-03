@@ -1,4 +1,4 @@
-package cn.edu.sjtu.iiot.system.batchqr;
+package cn.edu.sjtu.iiot.system.batchqr.view;
 
 import android.Manifest;
 import android.app.Activity;
@@ -34,15 +34,16 @@ import android.support.v4.app.ActivityCompat;
 import android.support.v4.app.DialogFragment;
 import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
+import android.support.v7.widget.SwitchCompat;
 import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.CompoundButton;
 import android.widget.Toast;
 
 import java.io.File;
@@ -59,8 +60,13 @@ import java.util.List;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 
+import cn.edu.sjtu.iiot.system.batchqr.QrCodeDetector;
+import cn.edu.sjtu.iiot.system.batchqr.R;
+import cn.edu.sjtu.iiot.system.batchqr.activity.ResultActivity;
+
 public class Camera2BasicFragment extends Fragment
-        implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback {
+        implements View.OnClickListener, ActivityCompat.OnRequestPermissionsResultCallback
+        ,CompoundButton.OnCheckedChangeListener{
 
     /**
      * Conversion from screen rotation to JPEG orientation.
@@ -68,6 +74,8 @@ public class Camera2BasicFragment extends Fragment
     private static final SparseIntArray ORIENTATIONS = new SparseIntArray();
     private static final int REQUEST_CAMERA_PERMISSION = 1;
     private static final String FRAGMENT_DIALOG = "dialog";
+    //mode of QrCodeDetector
+    private int detect_mode = 0;
 
     static {
         ORIENTATIONS.append(Surface.ROTATION_0, 90);
@@ -246,7 +254,7 @@ public class Camera2BasicFragment extends Fragment
                 Log.d(TAG, "image format: "+ imgFormat);
                 // Actual Image Processing goes here.
                 String mPath = mSvmClassifier.getAbsolutePath();
-                QrCodeDetector.detectQrCodes(mImage, mPath);
+                QrCodeDetector.detectQrCodes(mImage, mPath,Camera2BasicFragment.this.detect_mode);
                 mImage.close();
                 unlockFocus();
 
@@ -256,7 +264,6 @@ public class Camera2BasicFragment extends Fragment
                 startActivity(intent);
             } catch (IllegalStateException e) {
                 Log.e(TAG, "too many images queued for saving, dropping image for request: ");
-                return;
             }
         }
     };
@@ -441,6 +448,8 @@ public class Camera2BasicFragment extends Fragment
     public void onViewCreated(final View view, Bundle savedInstanceState) {
         view.findViewById(R.id.picture).setOnClickListener(this);
         view.findViewById(R.id.info).setOnClickListener(this);
+        SwitchCompat switchCompat = (SwitchCompat) view.findViewById(R.id.detect_switch);
+        switchCompat.setOnCheckedChangeListener(this);
         mTextureView = (AutoFitTextureView) view.findViewById(R.id.texture);
     }
 
@@ -934,6 +943,15 @@ public class Camera2BasicFragment extends Fragment
         } catch (CameraAccessException e) {
             e.printStackTrace();
         }
+    }
+
+    public void setDetectMode(int mode){
+        this.detect_mode = mode;
+    }
+
+    @Override
+    public void onCheckedChanged(CompoundButton compoundButton, boolean b) {
+        this.setDetectMode(b? QrCodeDetector.MODE_QUICK:QrCodeDetector.MODE_ACCURATE);
     }
 
     @Override

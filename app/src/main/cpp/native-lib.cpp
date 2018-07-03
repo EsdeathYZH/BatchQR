@@ -2,6 +2,7 @@
 
 #include <string>
 #include <vector>
+#include <time.h>
 
 #include <opencv2/core.hpp>
 #include <opencv2/imgproc.hpp>
@@ -38,6 +39,9 @@ extern "C" {
 JNIEXPORT jstring JNICALL Java_cn_edu_sjtu_iiot_system_batchqr_QrCodeDetector_JniProcess1(
         JNIEnv *env, jobject instance, jlong srcRgb)
 {
+    double totaltime;
+    clock_t start_time = clock();
+
     cv::Mat mRgb = *((cv::Mat*)srcRgb);
     float resizeRatio = resize_within_pixel(mRgb, mRgb, 1000);
 
@@ -60,6 +64,11 @@ JNIEXPORT jstring JNICALL Java_cn_edu_sjtu_iiot_system_batchqr_QrCodeDetector_Jn
 
         cv::rectangle(mRgb, drawRect, cv::Scalar(0,255,0), 3);
     }
+
+    clock_t end_time = clock();
+    totaltime = (double)(end_time-start_time)/CLOCKS_PER_SEC;
+
+    qr_bbox_raw_info = to_string(totaltime) + "&" + qr_bbox_raw_info;
 
     cv::imwrite("/storage/emulated/0/batchQR_model/box_results.png", mRgb);
 

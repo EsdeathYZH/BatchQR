@@ -3,7 +3,6 @@ package cn.edu.sjtu.iiot.system.batchqr;
 import android.graphics.ImageFormat;
 import android.media.Image;
 import android.util.Log;
-import android.view.Surface;
 
 import org.opencv.core.Core;
 import org.opencv.core.CvType;
@@ -17,6 +16,9 @@ import java.nio.ByteBuffer;
  */
 
 public class QrCodeDetector {
+
+    public static final int MODE_QUICK = 0;
+    public static final int MODE_ACCURATE = 1;
 
     private static final String TAG = "batchQR/QRCodeDetectorSeg";
     // Used to load the 'native-lib' library on application startup.
@@ -82,7 +84,7 @@ public class QrCodeDetector {
         return mat;
     }
 
-    public static void detectQrCodes(Image img, String paths) {
+    public static void detectQrCodes(Image img, String paths,int mode) {
         switch(img.getFormat()) {
             case ImageFormat.YUV_420_888: {
                 Image.Plane[] planes = img.getPlanes();
@@ -115,8 +117,12 @@ public class QrCodeDetector {
         Core.transpose(src_image, src_image);
         Core.flip(src_image, src_image, 1);
 
-        bbox_raw_info = JniProcess1(src_image.getNativeObjAddr());
-        //bbox_raw_info = JniProcess2(src_image.getNativeObjAddr(), paths);
+        if(mode==QrCodeDetector.MODE_QUICK){
+            bbox_raw_info = JniProcess1(src_image.getNativeObjAddr());
+        }else if(mode==QrCodeDetector.MODE_ACCURATE){
+            bbox_raw_info = JniProcess2(src_image.getNativeObjAddr(), paths);
+        }
+
         Log.d(TAG, bbox_raw_info);
     }
 

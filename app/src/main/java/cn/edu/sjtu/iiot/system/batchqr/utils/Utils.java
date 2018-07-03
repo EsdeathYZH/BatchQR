@@ -1,14 +1,11 @@
-package cn.edu.sjtu.iiot.system.batchqr;
+package cn.edu.sjtu.iiot.system.batchqr.utils;
 
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.graphics.Matrix;
 import android.os.Environment;
 
-import org.opencv.core.CvType;
-import org.opencv.core.Mat;
 import org.opencv.core.Rect;
-import org.opencv.imgproc.Imgproc;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -17,9 +14,11 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+
+import cn.edu.sjtu.iiot.system.batchqr.model.Neighbor;
+import cn.edu.sjtu.iiot.system.batchqr.model.UFS;
 
 import static java.util.Collections.sort;
 

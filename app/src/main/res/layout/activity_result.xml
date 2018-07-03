@@ -20,4 +20,29 @@
         android:layout_width="match_parent"
         android:background="@color/transparent_white"
         android:layout_height="wrap_content" />
+
+    <LinearLayout
+        android:layout_alignParentBottom="true"
+        android:orientation="vertical"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <EditText
+            android:id="@+id/et_input"
+            android:layout_margin="10dp"
+            android:inputType="text"
+            android:layout_width="match_parent"
+            android:layout_height="60dp"
+            android:hint="请输入文本信息..." />
+
+
+        <Button
+            android:id="@+id/btn_startspeech"
+            android:layout_width="wrap_content"
+            android:layout_gravity="center"
+            android:text="点击按钮语音输入 "
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
 </RelativeLayout>

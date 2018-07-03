@@ -1,4 +1,4 @@
-package cn.edu.sjtu.iiot.system.batchqr;
+package cn.edu.sjtu.iiot.system.batchqr.utils;
 
 import okhttp3.OkHttpClient;
 

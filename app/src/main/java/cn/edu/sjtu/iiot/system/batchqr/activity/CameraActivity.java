@@ -1,8 +1,11 @@
-package cn.edu.sjtu.iiot.system.batchqr;
+package cn.edu.sjtu.iiot.system.batchqr.activity;
 
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.view.KeyEvent;
+
+import cn.edu.sjtu.iiot.system.batchqr.view.Camera2BasicFragment;
+import cn.edu.sjtu.iiot.system.batchqr.R;
 
 public class CameraActivity extends AppCompatActivity {
 
